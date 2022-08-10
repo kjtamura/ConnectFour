@@ -4,6 +4,8 @@ class ConnectFour {
     private var player1 = ""
     private var player2 = ""
     private val board = mutableListOf<MutableList<Char>>()
+    private var numOfRows = 0
+    private var numOfCols = 0
 
     private fun buildBoard() {
         var row: Int
@@ -27,8 +29,16 @@ class ConnectFour {
                 col = 0
             }
         } while(!validBoardSize(row, col))
+
+        val list = mutableListOf<Char>()
+        numOfRows = row
+        numOfCols = col
+
+        repeat(col * 2 + 1) {
+            list.add(if(it%2 == 0) '|' else ' ')
+        }
         repeat(row) {
-            board.add(" ".repeat(col).toMutableList())
+            board.add(list)
         }
     }
 
@@ -47,6 +57,14 @@ class ConnectFour {
         }
     }
 
+    private fun printBoard() {
+        println(" ${(1..numOfCols).joinToString(" ")}")
+        repeat(numOfRows) {
+            println(board[it].joinToString(""))
+        }
+        println("=".repeat(board.first().size))
+    }
+
     fun start() {
         println("Connect Four")
         println("First player's name:")
@@ -55,6 +73,7 @@ class ConnectFour {
         player2 = readln()
         buildBoard()
         println("$player1 VS $player2")
-        println("${board.size} X ${board.first().size} board")
+        println("$numOfRows X $numOfCols board")
+        printBoard()
     }
 }
