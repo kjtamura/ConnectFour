@@ -1,11 +1,17 @@
 const val MIN = 5
 const val MAX = 9
+
+enum class PIECE (val piece: Char){
+    CIRCLE('o'),
+    STAR('*')
+}
 class ConnectFour {
     private var player1 = ""
     private var player2 = ""
     private val board = mutableListOf<MutableList<Char>>()
     private var numOfRows = 0
     private var numOfCols = 0
+    private var turn = 0
 
     private fun buildBoard() {
         var row: Int
@@ -30,16 +36,16 @@ class ConnectFour {
             }
         } while(!validBoardSize(row, col))
 
-        val list = mutableListOf<Char>()
         numOfRows = row
         numOfCols = col
-
-        repeat(col * 2 + 1) {
-            list.add(if(it%2 == 0) '|' else ' ')
-        }
         repeat(row) {
+            val list = mutableListOf<Char>()
+            repeat(col * 2 + 1) {
+                list.add(if (it % 2 == 0) '|' else ' ')
+            }
             board.add(list)
         }
+
     }
 
     private fun validBoardSize(row: Int, col: Int): Boolean {
@@ -65,6 +71,51 @@ class ConnectFour {
         println("=".repeat(board.first().size))
     }
 
+    private fun fillBoard(shape: Int, move: Int): Boolean {
+        if(board.first()[move * 2 + 1] != ' ') {
+            println("Column ${move + 1} is full")
+            return false
+        }
+        for (i in board.lastIndex downTo 0) {
+            if (board[i][move * 2 + 1] == ' ') {
+                board[i][move * 2 + 1] = if (shape > 0) PIECE.CIRCLE.piece else PIECE.STAR.piece
+                break
+            }
+        }
+        return true
+    }
+
+    private fun validInp(inp: String): Boolean {
+        try {
+            val col = inp.toInt()
+            if (col < 1 || col > numOfCols) {
+                throw Exception("The column number is out of range (1 - $numOfCols)")
+            }
+        } catch (e: NumberFormatException) {
+            println("Incorrect column number")
+            return false
+        } catch (e: Exception){
+            println(e.message)
+            return false
+        }
+        return true
+    }
+    private fun playGame() {
+        var shape = 1
+        do {
+            when (turn%2) {
+                0 -> println("$player1's turn:")
+                1 -> println("$player2's turn:")
+            }
+            val action = readln()
+            if(action != "end" && validInp(action) && fillBoard(shape, action.toInt() - 1)) {
+                shape *= -1
+                turn++
+                printBoard()
+            }
+
+        } while(action != "end")
+    }
     fun start() {
         println("Connect Four")
         println("First player's name:")
@@ -75,5 +126,7 @@ class ConnectFour {
         println("$player1 VS $player2")
         println("$numOfRows X $numOfCols board")
         printBoard()
+        playGame()
+        println("Game over!")
     }
 }
