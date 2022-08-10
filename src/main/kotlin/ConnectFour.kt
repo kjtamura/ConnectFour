@@ -5,13 +5,15 @@ enum class PIECE (val piece: Char){
     CIRCLE('o'),
     STAR('*')
 }
+
+data class Player (val name: String, val piece: Char)
 class ConnectFour {
-    private var player1 = ""
-    private var player2 = ""
     private val board = mutableListOf<MutableList<Char>>()
     private var numOfRows = 0
     private var numOfCols = 0
     private var turn = 0
+    private var curRow = 0
+    private var curCol = 0
 
     private fun buildBoard() {
         var row: Int
@@ -38,10 +40,11 @@ class ConnectFour {
 
         numOfRows = row
         numOfCols = col
+
         repeat(row) {
             val list = mutableListOf<Char>()
-            repeat(col * 2 + 1) {
-                list.add(if (it % 2 == 0) '|' else ' ')
+            repeat(col) {
+                list.add(' ')
             }
             board.add(list)
         }
@@ -65,20 +68,27 @@ class ConnectFour {
 
     private fun printBoard() {
         println(" ${(1..numOfCols).joinToString(" ")}")
+
         repeat(numOfRows) {
-            println(board[it].joinToString(""))
+            print("|")
+            for (i in board.first().indices) {
+                print("${board[it][i]}|")
+            }
+            println()
         }
-        println("=".repeat(board.first().size))
+        println("=".repeat(numOfCols * 2 + 1))
     }
 
-    private fun fillBoard(shape: Int, move: Int): Boolean {
-        if(board.first()[move * 2 + 1] != ' ') {
+    private fun fillBoard(player: Player, move: Int): Boolean {
+        if(board.first()[move] != ' ') {
             println("Column ${move + 1} is full")
             return false
         }
         for (i in board.lastIndex downTo 0) {
-            if (board[i][move * 2 + 1] == ' ') {
-                board[i][move * 2 + 1] = if (shape > 0) PIECE.CIRCLE.piece else PIECE.STAR.piece
+            if (board[i][move] == ' ') {
+                board[i][move] = player.piece
+                curRow = i
+                curCol = move
                 break
             }
         }
@@ -100,33 +110,97 @@ class ConnectFour {
         }
         return true
     }
-    private fun playGame() {
-        var shape = 1
+
+    fun checkDown(row: Int, player: Player): Int {
+        if(row >= numOfRows || board[row][curCol] != player.piece) {
+            return 0
+        }
+        return checkDown(row + 1, player) + 1
+    }
+
+    fun checkLeft(col: Int, player: Player): Int {
+        if(col < 0 || board[curRow][col] != player.piece) {
+            return 0
+        }
+        return checkLeft(col - 1, player) + 1
+    }
+
+    fun checkRight(col: Int, player: Player): Int {
+        if(col >= numOfCols || board[curRow][col] != player.piece) {
+            return 0
+        }
+        return checkRight(col + 1, player) + 1
+    }
+
+    fun checkDiagUp(row: Int, col: Int, player: Player): Int {
+        if(row < 0 || col < 0 || board[row][col] != player.piece) {
+            return 0
+        }
+        return checkDiagUp(row - 1, col - 1, player) + 1
+    }
+
+    fun checkDiagDown(row: Int, col: Int, player: Player): Int {
+        if(row >= numOfRows || col >= numOfCols || board[row][col] != player.piece) {
+            return 0
+        }
+        return checkDiagDown(row + 1, col + 1, player) + 1
+    }
+    fun checkAntiDiagUp(row: Int, col: Int, player: Player): Int {
+        if(row < 0 || col >= numOfCols || board[row][col] != player.piece) {
+            return 0
+        }
+        return checkAntiDiagUp(row - 1, col + 1, player) + 1
+    }
+
+    fun checkAntiDiagDown(row: Int, col: Int, player: Player): Int {
+        if(row >= numOfRows || col < 0 || board[row][col] != player.piece) {
+            return 0
+        }
+        return checkAntiDiagDown(row + 1, col - 1, player) + 1
+    }
+    fun checkWin(player: Player): Boolean {
+
+        if((checkDown(curRow, player) == 4) ||
+            (checkLeft(curCol, player) + checkRight(curCol, player) - 1 == 4) ||
+            (checkDiagUp(curRow, curCol, player) + checkDiagDown(curRow, curCol, player) - 1 == 4) ||
+            (checkAntiDiagUp(curRow, curCol, player) + checkAntiDiagDown(curRow, curCol, player) - 1 == 4)){
+            return true
+        }
+        return false
+    }
+
+    private fun switchPlayer (curPlayer: Player, player1: Player, player2: Player): Player = if (curPlayer == player1) player2 else player1
+    private fun draw(): Boolean = mutableListOf('*', 'o').containsAll(board.first())
+    private fun playGame(player1: Player, player2: Player) {
+        var curPlayer = player1
         do {
-            when (turn%2) {
-                0 -> println("$player1's turn:")
-                1 -> println("$player2's turn:")
-            }
-            val action = readln()
-            if(action != "end" && validInp(action) && fillBoard(shape, action.toInt() - 1)) {
-                shape *= -1
+            println("${curPlayer.name}'s turn:")
+
+            var action = readln()
+            if(action != "end" && validInp(action) && fillBoard(curPlayer, action.toInt() - 1)) {
                 turn++
                 printBoard()
+                when {
+                    checkWin(curPlayer) -> {
+                        println("Player ${curPlayer.name} won")
+                        action = "end"
+                    }
+                    draw() -> {
+                        println("It is a draw")
+                        action = "end"
+                    }
+                }
+                curPlayer = switchPlayer(curPlayer, player1, player2)
             }
 
         } while(action != "end")
     }
-    fun start() {
-        println("Connect Four")
-        println("First player's name:")
-        player1 = readln()
-        println("Second player's name:")
-        player2 = readln()
+    fun start(player1: Player, player2: Player) {
         buildBoard()
-        println("$player1 VS $player2")
+        println("${player1.name} VS ${player2.name}")
         println("$numOfRows X $numOfCols board")
         printBoard()
-        playGame()
+        playGame(player1, player2)
         println("Game over!")
     }
 }
