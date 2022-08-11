@@ -5,17 +5,43 @@ enum class PIECE (val piece: Char){
     CIRCLE('o'),
     STAR('*')
 }
+enum class ACTION (val cond: String){
+    DRAW("draw"),
+    WIN("win"),
+    END("end")
+}
+class Player (val name: String, val piece: Char) {
+    private var gamesWon = 0
 
-data class Player (val name: String, val piece: Char)
+    fun getWins(): Int {
+        return gamesWon
+    }
+
+    fun won() {
+        gamesWon += 2
+    }
+
+    fun draw() {
+        gamesWon += 1
+    }
+}
 class ConnectFour {
     private val board = mutableListOf<MutableList<Char>>()
     private var numOfRows = 0
     private var numOfCols = 0
-    private var turn = 0
     private var curRow = 0
     private var curCol = 0
+    var endGame = false
 
-    private fun buildBoard() {
+    fun getNumOfRows(): Int {
+        return numOfRows
+    }
+
+    fun getNumOfCols(): Int {
+        return numOfCols
+    }
+
+    fun buildBoard() {
         var row: Int
         var col: Int
         do {
@@ -164,6 +190,7 @@ class ConnectFour {
             (checkLeft(curCol, player) + checkRight(curCol, player) - 1 == 4) ||
             (checkDiagUp(curRow, curCol, player) + checkDiagDown(curRow, curCol, player) - 1 == 4) ||
             (checkAntiDiagUp(curRow, curCol, player) + checkAntiDiagDown(curRow, curCol, player) - 1 == 4)){
+            player.won()
             return true
         }
         return false
@@ -177,30 +204,42 @@ class ConnectFour {
             println("${curPlayer.name}'s turn:")
 
             var action = readln()
-            if(action != "end" && validInp(action) && fillBoard(curPlayer, action.toInt() - 1)) {
-                turn++
+            if(action == ACTION.END.cond) {
+                endGame = true
+                return
+            }
+
+            if(validInp(action) && fillBoard(curPlayer, action.toInt() - 1)) {
                 printBoard()
                 when {
                     checkWin(curPlayer) -> {
                         println("Player ${curPlayer.name} won")
-                        action = "end"
+                        action = ACTION.WIN.cond
                     }
                     draw() -> {
+                        player1.draw()
+                        player2.draw()
                         println("It is a draw")
-                        action = "end"
+                        action = ACTION.WIN.cond
                     }
                 }
                 curPlayer = switchPlayer(curPlayer, player1, player2)
             }
+        } while(action != ACTION.WIN.cond && action != ACTION.DRAW.cond)
+    }
 
-        } while(action != "end")
+    fun getEndOfGame(): Boolean {
+        return endGame
+    }
+    fun clear() {
+        for (i in board.indices) {
+            for (j in board.first().indices) {
+                board[i][j] = ' '
+            }
+        }
     }
     fun start(player1: Player, player2: Player) {
-        buildBoard()
-        println("${player1.name} VS ${player2.name}")
-        println("$numOfRows X $numOfCols board")
         printBoard()
         playGame(player1, player2)
-        println("Game over!")
     }
 }
